@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Contacts</title>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js" type="text/javascript"></script>
+        <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/jquery-ui.js" type="text/javascript"></script>
+        <link type="text/css" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.18/themes/base/jquery-ui.css" rel="stylesheet" />
+        <link href="resources/bootstrap/css/bootstrap.css" rel="stylesheet" />
+        <style type="text/css">
+        	body {
+        		width: 800px;
+        		margin-left: auto;
+        		margin-right: auto;
+        		margin-top: 10px;
+        		margin-bottom: 10px;
+        	}
+        	form {
+        		margin: 0px;
+        	}
+        	#listContainer table {
+        		margin: 0px;
+        	}
+        	#listContainer table tr.highlight {
+        		background-color: #FFF5AD;
+        	}
+        </style>
+        
+	</head>
+	<body>
+		<script type="text/javascript">
+        
+        var contactProto= {
+	        	getName: function() {
+	        		if("first" in this && "last" in this) {
+	        			return this.firstName + " " + this.lastName;
+	        		} else if("first" in this) {
+	        			return this.firstName;
+	        		}
+	        		return this.lastName;
+	        	}
+	        };
+        
+        var contactManager = {
+        	contacts: null,
+        	
+	        initialize : function(){
+	        	$.getJSON('services/Contact', $.proxy(function(data) {
+	        		this.contacts = data;
+	        		$(this).trigger('loaded');
+	        	}, this));
+	        },
+	        
+	        create : function(properties) {
+	        	return $.extend(Object.create(contactProto), properties);
+	        },
+	        
+	        add : function(contact) {
+	        	//FIXME this will throw an error if not initialized
+	        	
+	        	$.ajax({
+			        'type': 'POST',
+			        'url': 'services/Contact',
+			        'data': {
+			        	firstName: contact.firstName,
+			        	lastName: contact.lastName,
+			        	email: contact.email
+			        },
+			        'success': $.proxy(function(data, textStatus, jqXHR){
+	        			this.contacts.push(data);
+	        			$(this).trigger('added', data);
+		        	}, this)
+			    });
+	        	
+	        },
+	        
+	        createAndAdd : function(properties) {
+	        	var newContact = this.create(properties);
+	        	this.add(newContact);
+	        	return newContact;
+	        },
+	        
+	        delete : function(id) {
+	        	$.ajax({
+			        'type': 'DELETE',
+			        'url': 'services/Contact/' + id,
+			        'success': $.proxy(function(data, textStatus, jqXHR){
+			        	var foundIndex = -1;
+			        	for(var index = 0; index < this.contacts.length; index++) {
+			        		if(this.contacts[index].id === id) {
+			        			foundIndex = index;
+			        			break;
+			        		}
+			        	}
+			        	if(foundIndex > -1) {
+			        		this.contacts.splice(foundIndex, 1);
+			        	}
+			        	
+	        			console.log("deleted? " + data);
+	        			$(this).trigger('deleted');
+		        	}, this)
+			    });
+	        }
+        };
+        
+        function searchContactsByLastName(lastNameQuery) {
+	        var found = null;
+	        for(var index = 0; index < contactManager.contacts.length; index++) {
+	        	if(contactManager.contacts[index].lastName == lastNameQuery) {
+	        		found = contactManager.contacts[index];
+	        		break;
+	        	}
+	        }
+	        return found;
+        }
+        
+        function buildContactList() {
+        	var list = null;
+        	
+        	//if we receive a contact list, then build the table with it
+        	//otherwise, create a list using the contacts
+        	if(arguments.length > 0) {
+        		list = arguments[0];
+        	} else {
+        		list = contactManager.contacts;
+        	}
+        	
+        	$("#listContainer").empty();
+        	var $list = $("<table></table>")
+        		.addClass("table")
+        		.appendTo($("#listContainer"))
+        		.append($("<thead><th style=\"width: 20px;\"></th><th>First</th><th>Last</th><th>Email</th></thead>"));
+        	$.each(list, function(index, item) {
+        		var $row = $("<tr></tr>")
+        			.appendTo($list)
+        			.data('id', item.id)
+        			.append($("<td></td>").append(
+        				$("<a href=\"#\" alt=\"Delete\"><i class=\"icon-trash\"></i></a>").click(function(evt) {
+        					evt.preventDefault();
+        					contactManager.delete(item.id);
+        				})))
+        			.append($("<td></td>").addClass("columnFirstName").text(item.firstName))
+        			.append($("<td></td>").addClass("columnLastName").text(item.lastName))
+        			.append($("<td></td>").addClass("columnEmail").text(item.email));
+        	});
+        }
+        
+        function showAddPage() {
+			$("#addFormPage").slideDown();
+			$("#addFormPageLink").hide();
+			$("#addFormPage input").first().focus();
+			$("#addFormPage")[0].scrollIntoView();
+        }
+        function hideAddPage() {
+			$("#addFormPage").slideUp(200, function() {
+				$("#addFormPageLink").show();
+			});
+        }
+        
+        $(contactManager).bind("loaded", function() {
+        	buildContactList();
+        });
+        $(contactManager).bind("added", function(evt, contact) {
+			//rebuild the contact list
+			//FIXME this should not rebuild the complete list, only needs to add it to the list
+        	buildContactList();
+        	$("#listContainer table tr").each(function(index, item) {
+        		if($(item).data('id') === contact.id) {
+        			$(item).addClass('highlight');
+        			return false;
+        		}
+        	});
+        });
+        $(contactManager).bind("deleted", function() {
+        	buildContactList();
+        });
+        
+        $(document).ready(function(){
+        	contactManager.initialize();
+        	
+        	$("#searchBtn").click(function(evt){
+        		evt.preventDefault();
+        		
+        		var result = searchContactsByLastName($("#lastNameQuery").val());
+        		if(result) {
+        			console.log("Found " + result.email);
+        			$("#results").hide();
+        			$("#searchFormRemoveFilter").show();
+        			buildContactList([result]);
+        		} else {
+        			console.log("Not found");
+        			$("#results").show().text("No results found");
+        		}
+			});
+			
+			$("#searchFormRemoveFilter").click(function(evt){
+				evt.preventDefault();
+				$(this).hide();
+				buildContactList();
+			});
+			
+			$("#addFormAddButton").click(function(evt){
+				evt.preventDefault();
+				
+				contactManager.createAndAdd({
+					firstName: $("#addFormFirstName").val(),
+					lastName: $("#addFormLastName").val(),
+					email: $("#addFormEmail").val()
+				});
+				
+				$("#addForm input").val("");
+				hideAddPage();
+			})
+			
+			$("#addFormCancelButton").click(function(evt){
+				evt.preventDefault();
+				$("#addForm input").val("");
+				hideAddPage();
+			});
+			
+			$("#addFormPageLink").click(function(evt){
+				evt.preventDefault();
+				showAddPage();
+			});
+		});
+        </script>
+        
+        <div id="listPage">
+        	<h1>Contacts</h1>
+        	
+	        <div id="searchContainer" class="well" style="border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0;">
+				<form id="searchForm" class="form-search">
+					<input id="lastNameQuery" type="text" placeholder="Search by Last Name" class="search-query" />
+					<input id="searchBtn" type="submit" class="btn" value="Search" />
+				</form>
+				<div>
+						<a id="searchFormRemoveFilter" href="#" class="btn" style="display: none; margin-top: 10px"><i class="icon-remove"></i> Remove Filter</a>
+				</div>
+				<div id="results" class="alert" style="display: none; margin-bottom: 0px; margin-top: 10px;"></div>
+	        </div>
+	        
+        	<div id="listContainer" style="border: 1px solid rgba(0, 0, 0, 0.05);"></div>
+        </div>
+        
+        <a id="addFormPageLink" href="#"><i class="icon-plus"></i> Add</a>
+		<div id="addFormPage" class="well" style="display: none;">
+			<h2>Add Contact</h2>
+			<form id="addForm" class="form-horizontal">
+				<fieldset>
+					<div class="control-group">
+		        		<label class="control-label" for="addFormFirstName">First</label>
+		        		<div class="controls">
+		        			<input id="addFormFirstName" type="text" />
+		        		</div>
+		        	</div>
+		        	<div class="control-group">
+		        		<label class="control-label"  for="addFormLastName">Last</label>
+		        		<div class="controls">
+		        			<input id="addFormLastName" type="text" />
+		        		</div>
+		        	</div>
+		        	<div class="control-group">
+		        		<label class="control-label"  for="addFormEmail">Email</label>
+		        		<div class="controls">
+		        			<input id="addFormEmail" type="text" />
+		        		</div>
+		        	</div>
+		        	<div class="form-actions" style="margin-bottom: 0; padding-bottom: 0;">
+		        		<button id="addFormAddButton" class="btn btn-primary">Add</button>
+		        		<button id="addFormCancelButton" class="btn">Cancel</button>
+		        	</div>
+	        	</fieldset>
+	    	</form>
+    	</div>
+        
+	</body>
+</html>
