@@ -1,3 +1,4 @@
+"use strict";
 
 var nextContactId = 1;
 var contacts = [];
