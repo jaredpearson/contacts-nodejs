@@ -4,37 +4,8 @@ var http = require('http'),
     url = require('url'),
     path = require('path'),
     fs = require('fs'),
-    querystring = require('querystring');
-
-var nextContactId = 1;
-var contacts = [];
-
-//test fill the data
-contacts = [{id: nextContactId++, firstName: "Jared", lastName: "Pearson", email: "jared.pearson@salesforce.com"}];
-
-function getContactById(id) {
-    for(var index = 0; index < contacts.length; index++) {
-        if(contacts[index].id === id) {
-            return contacts[index];
-        }
-    }
-    return null;
-}
-function removeContactById(id) {
-    var foundIndex = -1;
-    for(var index = 0; index < contacts.length; index++) {
-        if(contacts[index].id === id) {
-            foundIndex = index;
-            break;
-        }
-    }
-    
-    if(foundIndex > -1) {
-        contacts.splice(foundIndex, 1);
-        return true;
-    }
-    return false;
-}
+    querystring = require('querystring'),
+    contacts = require('./contacts');
 
 var mimeTypes = {
     "html": "text/html",
@@ -81,12 +52,12 @@ http.createServer(function (request, response) {
                 }
                 
                 if(request.method == 'GET') {
-                    var contact = getContactById(id);
+                    var contact = contacts.getContactById(id);
                     response.writeHead(200, {'Content-Type': 'application/json'});
                     response.end(JSON.stringify(contact));
                     
                 } else if (request.method == 'DELETE') {
-                    var found = removeContactById(id);
+                    var found = contacts.removeContactById(id);
                     if(found) {
                         response.writeHead(200);
                         response.end();
@@ -103,7 +74,7 @@ http.createServer(function (request, response) {
             } else {
                 if(request.method == 'GET') {
                     response.writeHead(200, {'Content-Type': 'application/json'});
-                    response.end(JSON.stringify(contacts));
+                    response.end(JSON.stringify(contacts.getContacts()));
                     
                 } else if(request.method == 'POST') {
                     
@@ -119,12 +90,11 @@ http.createServer(function (request, response) {
                         var email = ('email' in data)? data.email : null;
                         
                         var newContact = {
-                                id: nextContactId++,
                                 firstName: firstName, 
                                 lastName: lastName,
                                 email: email
                             };
-                        contacts.push(newContact);
+                        contacts.addContact(newContact);
                         
                         response.writeHead(200, {'Content-Type': 'application/json'});
                         response.end(JSON.stringify(newContact));
