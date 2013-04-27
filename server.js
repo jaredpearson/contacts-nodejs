@@ -18,14 +18,18 @@ var mimeTypes = {
     "css": "text/css"};
 
 var staticResourceRoute = {
+    directory: 'public',
+    directoryIndex: 'index.html',
     get: function(req, res) {
         var uri = url.parse(req.url).pathname;
-        if(uri === '/') {
-            res.writeHead(404);
-            res.end();
-            return;
+
+        //if the user requests a directory, then we want to use the directory index
+        if(uri.substring(uri.length - 1) === '/') {
+            uri += this.directoryIndex;
         }
-        var filename = path.join(process.cwd(), uri);
+
+        //serve files only out of the specified directory
+        var filename = path.join(process.cwd(), this.directory, uri);
         path.exists(filename, function(exists) {
             if(!exists) {
                 console.log("not exists: " + filename);
@@ -138,6 +142,7 @@ http.createServer(function (request, response) {
         dispatcher.dispatch(request, response);
     } catch(err) {
         sys.puts(err);
+        console.log(err);
         response.writeHead(500);
         response.end('Internal Server Error');
     }
