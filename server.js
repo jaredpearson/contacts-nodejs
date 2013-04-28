@@ -7,7 +7,7 @@ var http = require('http'),
     querystring = require('querystring'),
     sys = require('sys'),
     ContactRepository = require('./contactRepository-memory').ContactRepository,
-    dispatcher = require('./dispatcher');
+    Dispatcher = require('./dispatcher').Dispatcher;
 
 //create a contacts repository to store all of the contacts
 //since this an in memory implementation we can add some test data
@@ -17,18 +17,29 @@ var contactRepository = new ContactRepository({
     ]
 });
 
-var mimeTypes = {
-    "html": "text/html",
-    "jpeg": "image/jpeg",
-    "jpg": "image/jpeg",
-    "png": "image/png",
-    "js": "text/javascript",
-    "css": "text/css"};
+//create a new dispatcher - this is used by the server to dispatch recieved
+//requests out to routes
+var dispatcher = new Dispatcher();
 
+//create a new route for serving static files out of the 'public' directory
+//this will be the default route, which is invoked by the dispatcher if 
+//no other routes match first
 var staticResourceRoute = {
     directory: 'public',
     directoryIndex: 'index.html',
+
+    //maps a file extension to a mimetype
+    mimeTypes: {
+        "html": "text/html",
+        "jpeg": "image/jpeg",
+        "jpg": "image/jpeg",
+        "png": "image/png",
+        "js": "text/javascript",
+        "css": "text/css"
+    },
+
     get: function(req, res) {
+        var mimeTypes = this.mimeTypes;
         var uri = url.parse(req.url).pathname;
 
         //if the user requests a directory, then we want to use the directory index
@@ -55,6 +66,7 @@ var staticResourceRoute = {
 }
 dispatcher.defaultRoute = staticResourceRoute;
 
+//Create the route for /services/Contact/{id}
 var contactResourceRoute = {
     pathPattern: /^\/services\/Contact\/\d+?/,
 
@@ -102,6 +114,7 @@ var contactResourceRoute = {
 };
 dispatcher.addRoute(contactResourceRoute);
 
+//Create the route for /services/Contact
 var allContactResourceRoute = {
     pathPattern: /^\/services\/Contact\/??/,
 
