@@ -1,17 +1,16 @@
 "use strict";
 
+var utils = require('./utils');
+
 var nextContactId = 1;
 var contacts = [];
-
-//test fill the data
-contacts = [{id: nextContactId++, firstName: "Jared", lastName: "Pearson", email: "jared.pearson@salesforce.com"}];
 
 /**
  * Gets the index of the contact within the in memory repository.
  * Returns a -1 if the ID does not correspond with a contact
  */
 function getContactIndex(id) {
-	for(var index = 0; index < contacts.length; index++) {
+    for(var index = 0; index < contacts.length; index++) {
         if(contacts[index].id === id) {
             return index;
         }
@@ -19,22 +18,36 @@ function getContactIndex(id) {
     return null;
 }
 
-var ContactRepository = function() {}
+var ContactRepository = function(options) {
+    options = options || {};
+    var self = this;
+    if(options.data) {
+        //TODO: assumes the data is always an array
+        utils.each(options.data, function(data) {
+            self.addContact(data);
+        });
+    }
+}
 
 /**
  * Gets the array of contacts
  */
 ContactRepository.prototype.getContacts = function(callback) {
-	callback({success: true}, contacts);
+    if(callback) callback({success: true}, contacts);
 }
 
 /**
  * Adds the contact to the in memory repository
  */
 ContactRepository.prototype.addContact = function(contact, callback) {
-	contact.id = nextContactId++;
-	contacts.push(contact);
-    callback({success: true}, contact);
+    if(contact) {
+        contact.id = nextContactId++;
+
+        //TODO: ensure that the contact has all of the required properties
+
+        contacts.push(contact);
+        if(callback) callback({success: true}, contact);
+    }
 }
 
 /**
@@ -47,7 +60,7 @@ ContactRepository.prototype.getContactById = function(id, callback) {
 	if(foundIndex > -1) {
 		result = contacts[foundIndex];
 	}
-    callback({success: true}, result);
+    if(callback) callback({success: true}, result);
 }
 
 /**
@@ -60,7 +73,7 @@ ContactRepository.prototype.removeContactById = function(id, callback) {
         contacts.splice(foundIndex, 1);
         result = true;
     }
-    callback({success: true}, result);
+    if(callback) callback({success: true}, result);
 }
 
 exports.ContactRepository = ContactRepository;

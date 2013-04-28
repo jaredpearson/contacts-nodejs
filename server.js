@@ -10,7 +10,12 @@ var http = require('http'),
     dispatcher = require('./dispatcher');
 
 //create a contacts repository to store all of the contacts
-var contactRepository = new ContactRepository();
+//since this an in memory implementation we can add some test data
+var contactRepository = new ContactRepository({
+    data: [
+        {firstName: "Peter", lastName: "Parker", email: "peterparker@dailyglobe.com"}
+    ]
+});
 
 var mimeTypes = {
     "html": "text/html",
