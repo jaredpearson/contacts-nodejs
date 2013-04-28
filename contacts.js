@@ -22,38 +22,41 @@ function getContactIndex(id) {
 /**
  * Gets the array of contacts
  */
-exports.getContacts = function() {
-	return contacts;
+exports.getContacts = function(callback) {
+	callback({success: true}, contacts);
 }
 
 /**
  * Adds the contact to the in memory repository
  */
-exports.addContact = function(contact) {
+exports.addContact = function(contact, callback) {
 	contact.id = nextContactId++;
 	contacts.push(contact);
+    callback({success: true}, contact);
 }
 
 /**
  * Gets the contact with the specified ID from the in memory repository.
  * If the ID does not correspond with a contact, a null reference is returned.
  */
-exports.getContactById = function(id) {
+exports.getContactById = function(id, callback) {
+    var result = null;
 	var foundIndex = getContactIndex(id);
 	if(foundIndex > -1) {
-		return contacts[foundIndex];
+		result = contacts[foundIndex];
 	}
-    return null;
+    callback({success: true}, result);
 }
 
 /**
  * Removes the contact with the specified ID from the 
  */
-exports.removeContactById = function(id) {
+exports.removeContactById = function(id, callback) {
+    var result = false;
     var foundIndex = getContactIndex(id);
     if(foundIndex > -1) {
         contacts.splice(foundIndex, 1);
-        return true;
+        result = true;
     }
-    return false;
+    callback({success: true}, result);
 }

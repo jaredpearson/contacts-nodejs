@@ -6,7 +6,7 @@ var http = require('http'),
     fs = require('fs'),
     querystring = require('querystring'),
     sys = require('sys'),
-    contacts = require('./contacts'),
+    contactRepository = require('./contacts'),
     dispatcher = require('./dispatcher');
 
 var mimeTypes = {
@@ -57,14 +57,15 @@ var contactResourceRoute = {
         var id = this.getIdFromPath(request);
 
         //find the contact and return it
-        var contact = contacts.getContactById(id);
-        if(!contact) {
-            response.writeHead(200, {'Content-Type': 'application/json'});
-            response.end(JSON.stringify(contact));
-        } else {
-            response.writeHead(404);
-            response.end();
-        }
+        contactRepository.getContactById(id, function(event, contact){
+            if(!contact) {
+                response.writeHead(200, {'Content-Type': 'application/json'});
+                response.end(JSON.stringify(contact));
+            } else {
+                response.writeHead(404);
+                response.end();
+            }
+        });
     },
 
     /**
@@ -74,14 +75,15 @@ var contactResourceRoute = {
         var id = this.getIdFromPath(request);
 
         //find the contact and delete it
-        var found = contacts.removeContactById(id);
-        if(found) {
-            response.writeHead(200);
-            response.end();
-        } else {
-            response.writeHead(404);
-            response.end();
-        }
+        contactRepository.removeContactById(id, function(event, found) {
+            if(found) {
+                response.writeHead(200);
+                response.end();
+            } else {
+                response.writeHead(404);
+                response.end();
+            }
+        });
     },
 
     getIdFromPath: function(request) {
@@ -99,8 +101,10 @@ var allContactResourceRoute = {
      * Displays a complete list of contacts
      */
     get: function(request, response) {
-        response.writeHead(200, {'Content-Type': 'application/json'});
-        response.end(JSON.stringify(contacts.getContacts()));
+        contactRepository.getContacts(function(event, contacts) {
+            response.writeHead(200, {'Content-Type': 'application/json'});
+            response.end(JSON.stringify(contacts));
+        });
     }, 
 
     /**
@@ -121,14 +125,15 @@ var allContactResourceRoute = {
             var email = ('email' in data)? data.email : null;
             
             var newContact = {
-                    firstName: firstName, 
-                    lastName: lastName,
-                    email: email
-                };
-            contacts.addContact(newContact);
+                firstName: firstName, 
+                lastName: lastName,
+                email: email
+            };
+            contactRepository.addContact(newContact, function(event, success){
+                response.writeHead(200, {'Content-Type': 'application/json'});
+                response.end(JSON.stringify(newContact));
+            });
             
-            response.writeHead(200, {'Content-Type': 'application/json'});
-            response.end(JSON.stringify(newContact));
         });
     }
 };
