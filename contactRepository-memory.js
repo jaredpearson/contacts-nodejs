@@ -19,17 +19,19 @@ function getContactIndex(id) {
     return null;
 }
 
+var ContactRepository = function() {}
+
 /**
  * Gets the array of contacts
  */
-exports.getContacts = function(callback) {
+ContactRepository.prototype.getContacts = function(callback) {
 	callback({success: true}, contacts);
 }
 
 /**
  * Adds the contact to the in memory repository
  */
-exports.addContact = function(contact, callback) {
+ContactRepository.prototype.addContact = function(contact, callback) {
 	contact.id = nextContactId++;
 	contacts.push(contact);
     callback({success: true}, contact);
@@ -39,7 +41,7 @@ exports.addContact = function(contact, callback) {
  * Gets the contact with the specified ID from the in memory repository.
  * If the ID does not correspond with a contact, a null reference is returned.
  */
-exports.getContactById = function(id, callback) {
+ContactRepository.prototype.getContactById = function(id, callback) {
     var result = null;
 	var foundIndex = getContactIndex(id);
 	if(foundIndex > -1) {
@@ -51,7 +53,7 @@ exports.getContactById = function(id, callback) {
 /**
  * Removes the contact with the specified ID from the 
  */
-exports.removeContactById = function(id, callback) {
+ContactRepository.prototype.removeContactById = function(id, callback) {
     var result = false;
     var foundIndex = getContactIndex(id);
     if(foundIndex > -1) {
@@ -60,3 +62,5 @@ exports.removeContactById = function(id, callback) {
     }
     callback({success: true}, result);
 }
+
+exports.ContactRepository = ContactRepository;

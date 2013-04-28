@@ -6,8 +6,11 @@ var http = require('http'),
     fs = require('fs'),
     querystring = require('querystring'),
     sys = require('sys'),
-    contactRepository = require('./contacts'),
+    ContactRepository = require('./contactRepository-memory').ContactRepository,
     dispatcher = require('./dispatcher');
+
+//create a contacts repository to store all of the contacts
+var contactRepository = new ContactRepository();
 
 var mimeTypes = {
     "html": "text/html",
