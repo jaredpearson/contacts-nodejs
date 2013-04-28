@@ -2,12 +2,11 @@
 
 var http = require('http'),
     url = require('url'),
-    path = require('path'),
-    fs = require('fs'),
     querystring = require('querystring'),
     sys = require('sys'),
     ContactRepository = require('./contactRepository-memory').ContactRepository,
-    Dispatcher = require('./dispatcher').Dispatcher;
+    Dispatcher = require('./dispatcher').Dispatcher,
+    StaticResourceRoute = require('./staticResourceRoute').StaticResourceRoute;
 
 //create a contacts repository to store all of the contacts
 //since this an in memory implementation we can add some test data
@@ -24,50 +23,10 @@ var dispatcher = new Dispatcher();
 //create a new route for serving static files out of the 'public' directory
 //this will be the default route, which is invoked by the dispatcher if 
 //no other routes match first
-var staticResourceRoute = {
-    directory: 'public',
-    directoryIndex: 'index.html',
-
-    //maps a file extension to a mimetype
-    mimeTypes: {
-        "html": "text/html",
-        "jpeg": "image/jpeg",
-        "jpg": "image/jpeg",
-        "png": "image/png",
-        "js": "text/javascript",
-        "css": "text/css"
-    },
-
-    get: function(req, res) {
-        var mimeTypes = this.mimeTypes;
-        var uri = url.parse(req.url).pathname;
-
-        //if the user requests a directory, then we want to use the directory index
-        if(uri.substring(uri.length - 1) === '/') {
-            uri += this.directoryIndex;
-        }
-
-        //serve files only out of the specified directory
-        var filename = path.join(process.cwd(), this.directory, uri);
-        path.exists(filename, function(exists) {
-            if(!exists) {
-                console.log("not exists: " + filename);
-                res.writeHead(404, {'Content-Type': 'text/plain'});
-                res.write('404 Not Found\n');
-                res.end();
-                return;
-            }
-            var mimeType = mimeTypes[path.extname(filename).split(".")[1]];
-            res.writeHead(200, {'Content-Type': mimeType});
-            var fileStream = fs.createReadStream(filename);
-            fileStream.pipe(res);
-        });
-    }
-}
-dispatcher.defaultRoute = staticResourceRoute;
+dispatcher.defaultRoute = new StaticResourceRoute();
 
 //Create the route for /services/Contact/{id}
-var contactResourceRoute = {
+dispatcher.addRoute({
     pathPattern: /^\/services\/Contact\/\d+?/,
 
     /**
@@ -111,11 +70,10 @@ var contactResourceRoute = {
         var path = requestUrl.pathname;
         return parseInt(path.substring(path.lastIndexOf('/') + 1));
     }
-};
-dispatcher.addRoute(contactResourceRoute);
+});
 
 //Create the route for /services/Contact
-var allContactResourceRoute = {
+dispatcher.addRoute({
     pathPattern: /^\/services\/Contact\/??/,
 
     /**
@@ -157,8 +115,7 @@ var allContactResourceRoute = {
             
         });
     }
-};
-dispatcher.addRoute(allContactResourceRoute);
+});
 
 // start the server with the dispatcher
 var port = process.env.PORT || 8080;
