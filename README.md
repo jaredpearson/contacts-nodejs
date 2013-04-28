@@ -1,15 +1,19 @@
-Contact App in node.js
+# Contact App in node.js
 
-# Description
+## Description
 This is a basic web application built in node.js to manage contacts. The contacts are not persisted.
 
-# Starting
-To start the application, run the following command from the project directory.
+## Starting
+To start the application, run the following command from the project directory. The server will use the default port of 8080.
 
-`EXPORT PORT=8080 node server.js`
+    node lib/server.js
 
-# Using
+To specify a port, set the `PORT` environment variable before starting the server.
+
+    EXPORT PORT=8080 node lib/server.js
+
+## Using
 To use the application once the application is started, open the browser to the following URL.
 
-`http://localhost:8080/index.html`
+    http://localhost:8080/
 
