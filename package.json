@@ -1,0 +1,10 @@
+{
+	"name": "contacts",
+	"version": "1.0.0",
+	"dependencies": {
+		"nodeunit": "0.8.0"
+	},
+	"scripts": {
+		"test": "./node_modules/.bin/nodeunit test"
+	}
+}
